@@ -1,0 +1,371 @@
+<?php session_start(); ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trendy Threads</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* Header */
+    header {
+      background: linear-gradient(90deg,#ff7e5f,#feb47b);
+      padding: 50px 20px;
+      text-align: center;
+      color: white;
+      position: relative;
+    }
+    header h1 { font-size: 3em; margin-bottom: 10px; }
+    header p { font-size: 1.2em; }
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 25px;
+      background:#fff;
+      color:#ff7e5f;
+      border-radius:25px;
+      font-weight:bold;
+      transition: all 0.3s;
+    }
+    .btn:hover { background:#ff7e5f; color:white; transform:scale(1.05);}
+
+    /* Auth buttons in header */
+    .auth-buttons {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .auth-btn {
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid white;
+      text-decoration: none;
+    }
+
+    .login-btn {
+      background: transparent;
+      color: white;
+    }
+
+    .login-btn:hover {
+      background: white;
+      color: #ff7e5f;
+    }
+
+    .signup-btn {
+      background: white;
+      color: #ff7e5f;
+    }
+
+    .signup-btn:hover {
+      background: transparent;
+      color: white;
+    }
+
+    /* Logged in user display */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-greeting {
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .user-greeting i {
+      margin-right: 5px;
+    }
+
+    .logout-btn {
+      padding: 8px 18px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .logout-btn:hover {
+      background: white;
+      color: #ff7e5f;
+      border-color: white;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-up {
+      animation: fadeInUp 0.8s ease backwards;
+    }
+    .delay-1 { animation-delay: 0.2s; }
+    .delay-2 { animation-delay: 0.4s; }
+    .delay-3 { animation-delay: 0.6s; }
+
+    main { max-width:1200px; margin:auto; padding:40px 20px; }
+
+    /* Info Section */
+    .info { display:flex; flex-wrap:wrap; gap:20px; align-items:center; margin-bottom:60px; }
+    .info img { flex:1; max-width:500px; border-radius:15px; transition:0.3s; }
+    .info img:hover { transform:scale(1.05);}
+    .info-text { flex:1; padding:20px; }
+    .info-text h2 { font-size:2em; color:#ff7e5f; margin-bottom:15px; }
+    .info-text p { line-height:1.6; }
+
+    /* Product Grid */
+    .products { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; margin-bottom:60px; }
+    .product-card { background:#fff; border-radius:15px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1); transition:0.3s;}
+    .product-card:hover { transform:translateY(-5px); box-shadow:0 10px 25px rgba(0,0,0,0.2);}
+    .product-card img { width:100%; height:250px; object-fit: contain; background-color:#f9f9f9; }
+    .product-content { padding:15px; }
+    .product-content h3 { color:#ff7e5f; margin-bottom:10px; }
+    .product-content p { font-size:0.95em; color:#555; margin-bottom:10px; }
+    .price { font-weight:bold; color:#ff7e5f; margin-bottom:10px; }
+    .product-content button { padding:10px 15px; background:#ff7e5f; color:white; border:none; border-radius:5px; cursor:pointer; transition:0.3s;}
+    .product-content button:hover { background:#e66050; }
+
+    /* Infinite Scroll Marquee */
+    .marquee-container {
+      width: 100%;
+      overflow: hidden;
+      background: #f9f9f9;
+      padding: 0 0 60px 0;
+    }
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: scrollMarquee 20s linear infinite;
+      gap: 20px;
+    }
+    .marquee-track img {
+      height: 250px;
+      width: 250px;
+      border-radius: 15px;
+      object-fit: cover;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    @keyframes scrollMarquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(calc(-50% - 10px)); }
+    }
+
+    /* Footer */
+    footer { 
+      background: #333; 
+      color: white; 
+      padding: 60px 20px 20px; 
+    }
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .footer-section {
+      flex: 1;
+      min-width: 250px;
+    }
+    .footer-section h3 {
+      color: #ff7e5f;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+    .footer-section p {
+      line-height: 1.6;
+      font-size: 0.95em;
+      color: #ccc;
+    }
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .footer-section ul li {
+      margin-bottom: 10px;
+    }
+    .footer-section ul li a {
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .footer-section ul li a:hover {
+      color: #ff7e5f;
+    }
+    .footer-section i {
+      margin-right: 10px;
+      color: #ff7e5f;
+    }
+    .social-links a {
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .social-links a:hover {
+      color: #ff7e5f;
+    }
+    .footer-bottom {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #555;
+      font-size: 0.85em;
+      color: #aaa;
+    }
+    
+    /* Responsive Design */
+    @media(max-width: 768px) {
+      header {
+        padding: 30px 15px;
+      }
+      header h1 {
+        font-size: 2.2em;
+      }
+      header p {
+        font-size: 1rem;
+      }
+      .auth-buttons {
+        position: static;
+        justify-content: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      .user-info {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .info {
+        flex-direction: column;
+        text-align: center;
+      }
+      .info img {
+        width: 100%;
+        height: auto;
+      }
+      .marquee-track img {
+        height: 150px;
+        width: 150px;
+      }
+      .marquee-container {
+        padding-bottom: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero Section -->
+  <header>
+    <!-- Auth Buttons -->
+    <div class="auth-buttons">
+      <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in']): ?>
+        <div class="user-info">
+          <span class="user-greeting"><i class="fa-solid fa-circle-user"></i> Hi, <?= htmlspecialchars($_SESSION['user_name']) ?>!</span>
+          <a href="pro.php" class="logout-btn" style="background: rgba(76,175,80,0.4);"><i class="fa-solid fa-truck"></i> My Orders</a>
+          <a href="prof.php" class="logout-btn" style="background: rgba(255,255,255,0.3);"><i class="fa-solid fa-user"></i> Profile</a>
+          <a href="login.php?action=logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+      <?php else: ?>
+        <a href="login.php?tab=login" class="auth-btn login-btn"><i class="fa-solid fa-right-to-bracket"></i> Log In</a>
+        <a href="login.php?tab=signup" class="auth-btn signup-btn"><i class="fa-solid fa-user-plus"></i> Sign Up</a>
+      <?php endif; ?>
+    </div>
+
+    <h1 class="animate-up">Welcome to Trendy Threads</h1>
+    <p class="animate-up delay-1">Discover the latest fashion in T-shirts and Pants!</p>
+    <!-- Link goes to sales.php -->
+    <a href="sales.php" class="btn animate-up delay-2">Shop Now</a>
+  </header>
+
+  <main>
+    <!-- About Section -->
+    <section class="info">
+      <img src="qqw.png" alt="Fashion" class="animate-up delay-1">
+      <div class="info-text animate-up delay-2">
+        <h2>About Trendy Threads</h2>
+        <p>High-quality, stylish clothing designed for comfort and confidence. Casual T-shirts or elegant pants – shop now and enjoy premium fashion at affordable prices!</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Infinite Marquee Section -->
+  <section class="marquee-container">
+    <div class="marquee-track">
+      <!-- Original Set -->
+      <img src="sss.jpg" alt="Scroll Image 1">
+      <img src="qwe.png" alt="Scroll Image 2">
+      <img src="rre.jpg" alt="Scroll Image 3">
+      <img src="xxx.jpg" alt="Scroll Image 4">
+      <img src="qqw.png" alt="Scroll Image 5">
+      <!-- Duplicate Set for Seamless Loop -->
+      <img src="sss.jpg" alt="Scroll Image 1">
+      <img src="qwe.png" alt="Scroll Image 2">
+      <img src="rre.jpg" alt="Scroll Image 3">
+      <img src="xxx.jpg" alt="Scroll Image 4">
+      <img src="qqw.png" alt="Scroll Image 5">
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Trendy Threads</h3>
+        <p>Your ultimate destination for premium, casual, and elegant fashion. Founded in 2026, we belong to the heart of the modern fashion district, bringing you the best threads from top global designers directly to your wardrobe. We believe everyone deserves to look and feel their best.</p>
+      </div>
+      <div class="footer-section">
+        <h3>Find Our Threads</h3>
+        <ul>
+          <li><a href="sales.php">Shop Men's Wear</a></li>
+          <li><a href="sales.php">Shop Women's Wear</a></li>
+          <li><a href="sales.php">New Arrivals 2026</a></li>
+          <li><a href="sales.php">Exclusive Collections</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Know The Shop</h3>
+        <p><i class="fa-solid fa-location-dot"></i> 123 Fashion Avenue, Metro Style City, 1000</p>
+        <p><i class="fa-solid fa-phone"></i> +63 9556004191</p>
+        <p><i class="fa-solid fa-envelope"></i> mjrbechayda@gmail.com</p>
+        <p style="margin-top: 15px;" class="social-links">
+          <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" style="margin-right: 10px; font-size: 1.5em; text-decoration: none;"><i class="fa-brands fa-facebook"></i></a>
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" style="margin-right: 10px; font-size: 1.5em; text-decoration: none;"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.twitter.com/" target="_blank" rel="noopener noreferrer" style="font-size: 1.5em; text-decoration: none;"><i class="fa-brands fa-twitter"></i></a>
+        <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" style="font-size: 1.5em; text-decoration: none;"><i class="fa-brands fa-tiktok"></i></a>
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 Trendy Threads. All rights reserved.
+    </div>
+  </footer>
+
+</body>
+</html>

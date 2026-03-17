@@ -1,0 +1,28 @@
+[
+    {
+        "name": "marjoe12",
+        "email": "marjoe12@gmail.com",
+        "password": "marjoe123",
+        "phone": "",
+        "region": "",
+        "province": "",
+        "city": "",
+        "barangay": "",
+        "street": "",
+        "profile_pic": "",
+        "login_method": "google"
+    },
+    {
+        "name": "nk",
+        "email": "nk@gmial.com",
+        "password": "k ",
+        "phone": "",
+        "region": "",
+        "province": "",
+        "city": "",
+        "barangay": "",
+        "street": "",
+        "profile_pic": "",
+        "login_method": "google"
+    }
+]
