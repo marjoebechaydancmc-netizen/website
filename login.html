@@ -22,8 +22,13 @@ function saveUsers($users) {
 
 // Handle Logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    $role = $_SESSION['user_role'] ?? '';
     session_destroy();
-    header('Location: index.html');
+    if ($role === 'admin') {
+        header('Location: admin_login.php');
+    } else {
+        header('Location: index.html');
+    }
     exit;
 }
 
@@ -586,11 +591,6 @@ body {
     .login-header {
         padding: 30px 15px;
     }
-    .social-validate-modal {
-        width: 95%;
-        padding: 20px;
-    }
-}
     .social-validate-modal {
         width: 95%;
         padding: 20px;

@@ -10,6 +10,19 @@
         "city": "",
         "barangay": "",
         "street": "",
-        "profile_pic": ""
+        "profile_pic": "",
+        "orders": [
+            {
+                "id": "ORD-12345",
+                "date": "2026-04-01 14:00:00",
+                "total": 59.98,
+                "payment_method": "GCash",
+                "status": "Completed",
+                "items": [
+                    {"name": "Product 1", "price": 19.99, "qty": 1},
+                    {"name": "Product 5", "price": 39.99, "qty": 1}
+                ]
+            }
+        ]
     }
 ]
