@@ -36,6 +36,25 @@
             $order['subtotal'] = $subtotal;
             $order['total'] = $subtotal + $order['shipping_fee'];
             array_unshift($u['orders'], $order);
+
+            // Deduct from products.json
+            $productsFile = __DIR__ . '/products.json';
+            if (file_exists($productsFile)) {
+                $productsData = json_decode(file_get_contents($productsFile), true);
+                if (is_array($productsData)) {
+                    foreach ($orderItems as $oi) {
+                        foreach ($productsData as &$p) {
+                            if ($p['name'] === $oi['name']) {
+                                if (!isset($p['stock'])) $p['stock'] = 100;
+                                $p['stock'] = max(0, $p['stock'] - 1);
+                                break;
+                            }
+                        }
+                    }
+                    unset($p);
+                    file_put_contents($productsFile, json_encode($productsData, JSON_PRETTY_PRINT));
+                }
+            }
           }
           break;
         }

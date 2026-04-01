@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $name = trim($_POST['name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $role = $_POST['role'] ?? 'sales';
 
     $users = loadUsers();
 
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => $email,
                     'password' => $password,
                     'phone' => $phone,
+                    'role' => $role,
                     'region' => '',
                     'province' => '',
                     'city' => '',
@@ -71,10 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email'] = $email;
                 $_SESSION['user_phone'] = $phone;
                 $_SESSION['logged_in'] = true;
+                $_SESSION['user_role'] = $role;
 
-                // Redirect back
-                $redirect = $_POST['redirect'] ?? 'front.php';
-                header('Location: ' . $redirect);
+                // Redirect based on role
+                if ($role === 'admin') {
+                    header('Location: admin.php');
+                } else {
+                    $redirect = $_POST['redirect'] ?? 'front.php';
+                    header('Location: ' . $redirect);
+                }
                 exit;
             }
         }
@@ -103,9 +110,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_phone'] = $user_to_login['phone'] ?? '';
                 $_SESSION['user_profile_pic'] = $user_to_login['profile_pic'] ?? '';
                 $_SESSION['logged_in'] = true;
+                $_SESSION['user_role'] = $user_to_login['role'] ?? 'sales';
                 
-                $redirect = $_POST['redirect'] ?? 'front.php';
-                header('Location: ' . $redirect);
+                $user_role = $user_to_login['role'] ?? 'sales';
+                if ($user_role === 'admin') {
+                    header('Location: admin.php');
+                } else {
+                    $redirect = $_POST['redirect'] ?? 'front.php';
+                    header('Location: ' . $redirect);
+                }
                 exit;
             } else {
                 if ($login_method !== 'standard') {
@@ -121,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'barangay' => '',
                         'street' => '',
                         'profile_pic' => '',
+                        'role' => 'sales',
                         'login_method' => $login_method
                     ];
                     $users[] = $newUser;
@@ -128,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $_SESSION['user_name'] = $newUser['name'];
                     $_SESSION['user_email'] = $newUser['email'];
+                    $_SESSION['user_role'] = 'sales';
                     $_SESSION['logged_in'] = true;
 
                     $redirect = $_POST['redirect'] ?? 'front.php';

@@ -582,50 +582,9 @@ footer {
 <main>
 <div class="product-grid">
 
-<!-- Automatically generated 40 products -->
+<!-- Dynamically loaded products -->
 <script>
-const products = [
-  {name:"Product 1",price:19.99,img:"aaq.jpg",desc:"High-quality and stylish product."},
-  {name:"Product 2",price:29.99,img:"sss.jpg",desc:"Durable and reliable item."},
-  {name:"Product 3",price:24.99,img:"xxx.jpg",desc:"Perfect for everyday use."},
-  {name:"Product 4",price:34.99,img:"zzz.jpg",desc:"Modern and stylish design."},
-  {name:"Product 5",price:39.99,img:"aaq.jpg",desc:"Comfortable and trendy."},
-  {name:"Product 6",price:44.99,img:"qaq.jpg",desc:"Top-notch quality materials."},
-  {name:"Product 7",price:22.99,img:"wwqq.jpg",desc:"Stylish and affordable."},
-  {name:"Product 8",price:31.99,img:"qwe.png",desc:"Durable, long-lasting item."},
-  {name:"Product 9",price:27.99,img:"rre.jpg",desc:"Elegant and modern style."},
-  {name:"Product 10",price:36.99,img:"qqw.png",desc:"Perfect for everyday use."},
-  {name:"Product 11",price:19.99,img:"xxx.jpg",desc:"Comfortable and stylish."},
-  {name:"Product 12",price:42.99,img:"rre.jpg",desc:"Modern and reliable design."},
-  {name:"Product 13",price:28.99,img:"eew.jpg",desc:"High-quality and trendy."},
-  {name:"Product 14",price:33.99,img:"zzz.jpg",desc:"Stylish and durable."},
-  {name:"Product 15",price:37.99,img:"asda.jpg",desc:"Comfortable and modern design."},
-  {name:"Product 16",price:41.99,img:"asd.jpg",desc:"Durable and stylish material."},
-  {name:"Product 17",price:23.99,img:"aaq.jpg",desc:"Modern design for everyday wear."},
-  {name:"Product 18",price:39.99,img:"wwqq.jpg",desc:"Stylish and high-quality material."},
-  {name:"Product 19",price:31.99,img:"wwqq.jpg",desc:"Comfortable, trendy, and stylish."},
-  {name:"Product 20",price:45.99,img:"sss.jpg",desc:"Perfect combination of style and comfort."},
-  {name:"Product 21",price:20.99,img:"sss.jpg",desc:"Extra stylish product."},
-  {name:"Product 22",price:25.99,img:"qwe.png",desc:"High-quality item."},
-  {name:"Product 23",price:30.99,img:"sss.jpg",desc:"Reliable and modern design."},
-  {name:"Product 24",price:35.99,img:"aaq.jpg",desc:"Durable and comfortable."},
-  {name:"Product 25",price:40.99,img:"asda.jpg",desc:"Trendy and affordable."},
-  {name:"Product 26",price:22.49,img:"asd.jpg",desc:"Elegant everyday item."},
-  {name:"Product 27",price:28.49,img:"qaq.jpg",desc:"Perfect combination of style and quality."},
-  {name:"Product 28",price:32.49,img:"wwqq.jpg",desc:"High-end design."},
-  {name:"Product 29",price:37.49,img:"rre.jpg",desc:"Stylish and comfortable."},
-  {name:"Product 30",price:42.49,img:"xxx.jpg",desc:"Reliable and trendy."},
-  {name:"Product 31",price:19.49,img:"zzz.jpg",desc:"Everyday essential item."},
-  {name:"Product 32",price:24.49,img:"aaq.jpg",desc:"Modern and stylish."},
-  {name:"Product 33",price:29.49,img:"asda.jpg",desc:"Comfortable and durable."},
-  {name:"Product 34",price:34.49,img:"eew.jpg",desc:"High-quality and trendy."},
-  {name:"Product 35",price:39.49,img:"qqww.jpg",desc:"Perfect for home use."},
-  {name:"Product 36",price:44.49,img:"rre.jpg",desc:"Stylish and long-lasting."},
-  {name:"Product 37",price:23.49,img:"xxx.jpg",desc:"Affordable yet reliable."},
-  {name:"Product 38",price:28.99,img:"zzz.jpg",desc:"Trendy and comfortable."},
-  {name:"Product 39",price:33.99,img:"eew.jpg",desc:"Elegant and modern design."},
-  {name:"Product 40",price:38.99,img:"sss.jpg",desc:"Durable and stylish product."}
-];
+const products = <?= file_exists(__DIR__ . '/products.json') ? file_get_contents(__DIR__ . '/products.json') : '[]' ?>;
 
 const grid = document.querySelector('.product-grid');
 
@@ -648,6 +607,8 @@ const reviewOptions = [
 ];
 
 products.forEach((p, i) => {
+  if (p.stock !== undefined && p.stock <= 0) return; // skip if out of stock
+  
   const stars = (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1);
   const reviewCount = Math.floor(Math.random() * 41) + 10;
   
