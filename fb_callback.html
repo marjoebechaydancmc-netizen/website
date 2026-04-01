@@ -106,5 +106,5 @@ if (!$found) {
 }
 
 // Step 5: Redirect to home page
-header('Location: front.php');
+header('Location: index.html');
 exit;

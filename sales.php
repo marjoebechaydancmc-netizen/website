@@ -562,7 +562,7 @@ footer {
 <body>
 
 <header>
-<button class="back-btn" onclick="window.location.href='front.php'">Home</button>
+<button class="back-btn" onclick="window.location.href='index.html'">Home</button>
 <h1>Our Products</h1>
 <div class="header-controls" style="position:absolute; top:20px; right:20px; display:flex; gap:10px; align-items:center; z-index: 10;">
   <div class="search-wrapper">

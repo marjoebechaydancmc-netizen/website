@@ -11,7 +11,7 @@ $users = file_exists($usersFile) ? json_decode(file_get_contents($usersFile), tr
 $income = 0;
 $salesCount = 0;
 $salesHistory = []; 
-$currentAdminData = null;
+$currentAdminData = [];
 
 if (is_array($users)) {
     foreach ($users as $u) {
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             unset($u);
             file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
         }
-        header("Location: admin.php?updated=1"); 
+        header("Location: admin.php?tab=profile&updated=1"); 
         exit;
     }
 }
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'desc' => 'Newly added product.'
         ];
         file_put_contents($productsFile, json_encode($prods, JSON_PRETTY_PRINT));
-        header("Location: admin.php"); 
+        header("Location: admin.php?tab=stocks"); 
         exit;
     }
 }
@@ -405,7 +405,14 @@ function drawChart() {
 }
 
 // Initialize UI
-window.onload = update;
+window.onload = function() {
+    update();
+    let urlParams = new URLSearchParams(window.location.search);
+    let tabParam = urlParams.get('tab');
+    if (tabParam && document.getElementById(tabParam)) {
+        showPage(tabParam);
+    }
+};
 </script>
 
 </body>

@@ -1,0 +1,15 @@
+[
+    {
+        "name": "Admin User",
+        "email": "admin@example.com",
+        "password": "password123",
+        "phone": "",
+        "role": "admin",
+        "region": "",
+        "province": "",
+        "city": "",
+        "barangay": "",
+        "street": "",
+        "profile_pic": ""
+    }
+]

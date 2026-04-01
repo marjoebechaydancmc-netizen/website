@@ -459,7 +459,7 @@ footer {
 
 <!-- Header -->
 <div class="header">
-    <a href="front.php" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Home</a>
+    <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Home</a>
     <h1><i class="fa-solid fa-user-circle"></i> My Profile</h1>
 </div>
 

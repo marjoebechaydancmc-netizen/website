@@ -278,5 +278,12 @@
         "img": "sss.jpg",
         "desc": "Durable and stylish product.",
         "stock": 100
+    },
+    {
+        "name": "Test Product",
+        "price": 10,
+        "stock": 50,
+        "img": "placeholder.jpg",
+        "desc": "Newly added product."
     }
 ]

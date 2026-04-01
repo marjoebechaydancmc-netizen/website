@@ -267,7 +267,7 @@ body {
         </form>
     </div>
     
-    <a href="front.php" class="back-home"><i class="fa-solid fa-house"></i> Return to Main Website</a>
+    <a href="index.html" class="back-home"><i class="fa-solid fa-house"></i> Return to Main Website</a>
 </div>
 
 <script>

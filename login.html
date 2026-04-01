@@ -23,7 +23,7 @@ function saveUsers($users) {
 // Handle Logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_destroy();
-    header('Location: front.php');
+    header('Location: index.html');
     exit;
 }
 
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($role === 'admin') {
                     header('Location: admin.php');
                 } else {
-                    $redirect = $_POST['redirect'] ?? 'front.php';
+                    $redirect = $_POST['redirect'] ?? 'index.html';
                     header('Location: ' . $redirect);
                 }
                 exit;
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user_role === 'admin') {
                     header('Location: admin.php');
                 } else {
-                    $redirect = $_POST['redirect'] ?? 'front.php';
+                    $redirect = $_POST['redirect'] ?? 'index.html';
                     header('Location: ' . $redirect);
                 }
                 exit;
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_role'] = 'sales';
                     $_SESSION['logged_in'] = true;
 
-                    $redirect = $_POST['redirect'] ?? 'front.php';
+                    $redirect = $_POST['redirect'] ?? 'index.html';
                     header('Location: ' . $redirect);
                     exit;
                 } else {
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? 'front.php';
+$redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? 'index.html';
 $tab = $_GET['tab'] ?? 'login';
 ?>
 <!DOCTYPE html>
@@ -711,7 +711,7 @@ body {
         </form>
     </div>
 
-    <a href="front.php" class="back-home"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+    <a href="index.html" class="back-home"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
 </div>
 
 <script>
