@@ -7,6 +7,7 @@
 <title>Our Products</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="admin_db.js"></script>
 
 <style>
 body {
@@ -571,7 +572,7 @@ footer {
   </div>
   <div id="authLinks" style="display:none; gap:10px;">
     <a href="pro.html" class="orders-btn"><i class="fa-solid fa-truck"></i> My Orders</a>
-    <a href="prof.html" class="profile-btn"><i class="fa-solid fa-user"></i> Profile</a>
+    <a href="prof.html" class="profile-btn" id="headerProfileName"><i class="fa-solid fa-user"></i> Profile</a>
   </div>
   <button class="cart-btn" onclick="goToCart()">
     <i class="fa-solid fa-cart-shopping"></i> Cart <span class="cart-count" id="cart-count">0</span>
@@ -584,14 +585,7 @@ footer {
 
 <!-- Dynamically loaded products -->
 <script>
-fetch('products.json').then(r => r.json()).then(products => {
-  const localAdditions = JSON.parse(localStorage.getItem('adminProducts') || '[]');
-  products = products.concat(localAdditions);
-
-
-
 const grid = document.querySelector('.product-grid');
-
 const reviewOptions = [
   "Absolutely love this! The quality is amazing for the price.",
   "Very comfortable and looks exactly like the pictures. Superb!",
@@ -610,61 +604,67 @@ const reviewOptions = [
   "Exceeded my expectations entirely. Will be returning for more."
 ];
 
-products.forEach((p, i) => {
-  if (p.stock !== undefined && p.stock <= 0) return; // skip if out of stock
-  
-  const stars = (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1);
-  const reviewCount = Math.floor(Math.random() * 41) + 10;
-  
-  const productReviews = [];
-  const numReviews = Math.floor(Math.random() * 2) + 2; 
-  const authors = ["Alex M.", "Jamie S.", "Sam L.", "Jordan K.", "Taylor R.", "Morgan B."];
-  
-  for(let j=0; j<numReviews; j++) {
-    const randomOption = reviewOptions[Math.floor(Math.random() * reviewOptions.length)];
-    const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
-    productReviews.push({
-      text: randomOption,
-      author: "- " + randomAuthor,
-      rating: Math.floor(Math.random() * 2) + 4 
-    });
-  }
+function loadProducts() {
+  const products = AdminDB.getProducts();
+  grid.innerHTML = '';
 
-  const card = document.createElement('div');
-  const delay = (i % 10) * 0.1; // Stagger animation
-  card.className = 'product-card';
-  card.style.animationDelay = `${delay}s`;
-  card.dataset.name = p.name;
-  card.dataset.price = p.price;
-  card.dataset.img = p.img;
-  card.dataset.stars = stars;
-  card.dataset.reviews = reviewCount;
-  card.dataset.productReviews = JSON.stringify(productReviews);
-  card.dataset.desc = p.desc;
-  
-  let starHtml = '';
-  for(let i=1; i<=5; i++) {
-    if(i <= Math.floor(stars)) starHtml += '<i class="fa-solid fa-star"></i>';
-    else if(i === Math.ceil(stars) && stars % 1 !== 0) starHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
-    else starHtml += '<i class="fa-regular fa-star"></i>';
-  }
+  products.forEach((p, i) => {
+    if (p.stock !== undefined && p.stock <= 0) return; 
+    
+    // Random stars and reviews for static charm
+    const stars = (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1);
+    const reviewCount = Math.floor(Math.random() * 41) + 10;
+    const productReviews = [];
+    const numReviews = Math.floor(Math.random() * 2) + 2; 
+    const authors = ["Alex M.", "Jamie S.", "Sam L.", "Jordan K.", "Taylor R.", "Morgan B."];
+    
+    for(let j=0; j<numReviews; j++) {
+      const randomOption = reviewOptions[Math.floor(Math.random() * reviewOptions.length)];
+      const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
+      productReviews.push({
+        text: randomOption,
+        author: "- " + randomAuthor,
+        rating: Math.floor(Math.random() * 2) + 4 
+      });
+    }
 
-  card.innerHTML = `
-    <img src="${p.img}" alt="${p.name}" style="cursor: pointer;" onclick="openProductModal(this.closest('.product-card'))">
-    <div class="product-content">
-      <h2 style="cursor: pointer;" onclick="openProductModal(this.closest('.product-card'))">${p.name}</h2>
-      <div class="product-rating">${starHtml} <span>${stars} (${reviewCount} reviews)</span></div>
-      <p>${p.desc.length > 50 ? p.desc.substring(0, 50) + '...' : p.desc}</p>
-      <div class="price">$${p.price}</div>
-      <div class="product-buttons">
-        <button class="add-cart-btn"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
-        <button class="buy-btn">Buy Now</button>
+    const card = document.createElement('div');
+    const delay = (i % 10) * 0.1;
+    card.className = 'product-card';
+    card.style.animationDelay = `${delay}s`;
+    card.dataset.name = p.name;
+    card.dataset.price = p.price;
+    card.dataset.img = p.img;
+    card.dataset.stars = stars;
+    card.dataset.reviews = reviewCount;
+    card.dataset.productReviews = JSON.stringify(productReviews);
+    card.dataset.desc = p.desc;
+    
+    let starHtml = '';
+    for(let k=1; k<=5; k++) {
+      if(k <= Math.floor(stars)) starHtml += '<i class="fa-solid fa-star"></i>';
+      else if(k === Math.ceil(stars) && stars % 1 !== 0) starHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+      else starHtml += '<i class="fa-regular fa-star"></i>';
+    }
+
+    card.innerHTML = `
+      <img src="${p.img}" alt="${p.name}" style="cursor: pointer;" onclick="openProductModal(this.closest('.product-card'))">
+      <div class="product-content">
+        <h2 style="cursor: pointer;" onclick="openProductModal(this.closest('.product-card'))">${p.name}</h2>
+        <div class="product-rating">${starHtml} <span>${stars} (${reviewCount} reviews)</span></div>
+        <p>${p.desc.length > 50 ? p.desc.substring(0, 50) + '...' : p.desc}</p>
+        <div class="price">$${p.price}</div>
+        <div class="product-buttons">
+          <button class="add-cart-btn"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
+          <button class="buy-btn">Buy Now</button>
+        </div>
       </div>
-    </div>
-  `;
-  grid.appendChild(card);
+    `;
+    grid.appendChild(card);
   });
-});
+}
+
+loadProducts();
 </script>
 
 </div>
@@ -762,25 +762,16 @@ products.forEach((p, i) => {
 </footer>
 
 <script>
-var isLoggedIn = localStorage.getItem('loggedInUser') ? true : false;
+const user = AdminDB.getLoggedInUser();
+const isLoggedIn = !!user;
+
 if(isLoggedIn) {
   document.getElementById('authLinks').style.display = 'flex';
-}
-
-// Load cart from localStorage
-let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-if (!isLoggedIn) {
-  cart = [];
-  localStorage.removeItem('cart');
-}
-
-function saveCart() {
-  localStorage.setItem('cart', JSON.stringify(cart));
-  updateCartCount();
+  document.getElementById('headerProfileName').innerHTML = `<i class="fa-solid fa-user"></i> ${user.name}`;
 }
 
 function updateCartCount() {
+  const cart = AdminDB.getCart();
   document.getElementById('cart-count').innerText = cart.length;
 }
 
@@ -792,7 +783,6 @@ function closeLoginPopup() {
   document.getElementById('loginOverlay').classList.remove('active');
 }
 
-// Close popup when clicking outside
 document.getElementById('loginOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeLoginPopup();
 });
@@ -815,11 +805,9 @@ function openProductModal(card) {
   document.getElementById('modalPrice').innerText = '$' + price;
   document.getElementById('modalDesc').innerText = desc;
   
-  // Populate the reviews list dynamically
   const list = document.getElementById('modalReviewsList');
-  list.innerHTML = ''; // clear out old reviews
+  list.innerHTML = ''; 
   
-  // Load the Random Default Reviews
   productReviews.forEach(rev => {
     let reviewStarHtml = '';
     for(let i=1; i<=5; i++) {
@@ -837,19 +825,11 @@ function openProductModal(card) {
     list.insertAdjacentHTML('beforeend', revHtml);
   });
 
-  // Reset user review form
   document.getElementById('userReviewText').value = '';
   document.getElementById('userReviewRating').value = '5';
   document.getElementById('reviewSuccessMsg').style.display = 'none';
   
-  let starHtml = '';
-  for(let i=1; i<=5; i++) {
-    if(i <= Math.floor(stars)) starHtml += '<i class="fa-solid fa-star"></i>';
-    else if(i === Math.ceil(stars) && stars % 1 !== 0) starHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
-    else starHtml += '<i class="fa-regular fa-star"></i>';
-  }
-  document.getElementById('modalRating').innerHTML = starHtml + ` <span>${stars} (${reviews} reviews)</span>`;
-
+  document.getElementById('modalRating').innerHTML = starHtmlForCurrent(stars) + ` <span>${stars} (${reviews} reviews)</span>`;
   document.getElementById('productModalOverlay').classList.add('active');
 }
 
@@ -875,17 +855,14 @@ document.getElementById('submitReviewBtn').addEventListener('click', function() 
     return;
   }
   
-  // Create star rating HTML
   let starHtml = '';
   for(let i=1; i<=5; i++) {
     if(i <= rating) starHtml += '<i class="fa-solid fa-star"></i>';
     else starHtml += '<i class="fa-regular fa-star"></i>';
   }
   
-  const profileBtn = document.querySelector('.profile-btn');
-  const userIdentifier = isLoggedIn ? (profileBtn ? profileBtn.innerText.trim() : "You") : "You";
+  const userIdentifier = user ? user.name : "You";
 
-  // Add review to the UI immediately for responsiveness
   const reviewHtml = `
     <div class="review-item user-submitted-review" style="margin-bottom: 15px; border-bottom: 1px dotted #eee; padding-bottom: 10px;">
       <div class="product-rating" style="margin-bottom: 5px;">${starHtml}</div>
@@ -895,38 +872,28 @@ document.getElementById('submitReviewBtn').addEventListener('click', function() 
   `;
   document.getElementById('modalReviewsList').insertAdjacentHTML('afterbegin', reviewHtml);
   
-  // Disable button to prevent multi-submit
   const submitBtn = document.getElementById('submitReviewBtn');
   submitBtn.disabled = true;
   submitBtn.innerText = "Submitting...";
 
-  // Local only success
-  submitBtn.disabled = false;
-  submitBtn.innerText = "Submit Review";
-  
-  document.getElementById('userReviewText').value = '';
-  document.getElementById('reviewSuccessMsg').style.display = 'block';
   setTimeout(() => {
-    document.getElementById('reviewSuccessMsg').style.display = 'none';
-  }, 3000);
-  
-  // Update internal comment count (visual only for this session, not saved to DB)
+    submitBtn.disabled = false;
+    submitBtn.innerText = "Submit Review";
+    document.getElementById('userReviewText').value = '';
+    document.getElementById('reviewSuccessMsg').style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('reviewSuccessMsg').style.display = 'none';
+    }, 3000);
+  }, 500);
+
   if(currentProductCard) {
     let reviewsCount = parseInt(currentProductCard.dataset.reviews) || 0;
     currentProductCard.dataset.reviews = reviewsCount + 1;
 
-    // Update card UI in the grid
     const reviewsSpan = currentProductCard.querySelector('.product-rating span');
     if (reviewsSpan) {
        const starsText = currentProductCard.dataset.stars;
-       reviewsSpan.innerText = `${starsText} (${reviewsCount + 1} reviews)`;
-    }
-    
-    // Update modal header as well
-    const modalRating = document.getElementById('modalRating');
-    if (modalRating) {
-       const starsText = currentProductCard.dataset.stars;
-       modalRating.innerHTML = starHtmlForCurrent(starsText) + ` <span>${starsText} (${reviewsCount + 1} reviews)</span>`;
+       reviewsSpan.innerText = `${starsText} (${reviewsCount + 1} reviews) `;
     }
   }
 });
@@ -948,12 +915,12 @@ document.getElementById('modalAddCartBtn').addEventListener('click', function() 
     return; 
   }
   if(currentProductCard) {
-    cart.unshift({
+    AdminDB.addToCart({
       name: currentProductCard.dataset.name, 
       price: currentProductCard.dataset.price, 
       img: currentProductCard.dataset.img
     });
-    saveCart();
+    updateCartCount();
     alert(currentProductCard.dataset.name + ' added to cart!');
   }
 });
@@ -965,27 +932,14 @@ document.getElementById('modalBuyBtn').addEventListener('click', function() {
     return; 
   }
   if(currentProductCard) {
-    const item = [{
-      name: currentProductCard.dataset.name, 
-      price: currentProductCard.dataset.price, 
-      img: currentProductCard.dataset.img
-    }];
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'auth.php';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'orderData';
-    input.value = JSON.stringify(item);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
+    const price = currentProductCard.dataset.price;
+    window.location.href = `payment.html?amount=${price}&item=${encodeURIComponent(currentProductCard.dataset.name)}`;
   }
 });
 
-// Go to cart page
 function goToCart() {
   if (!isLoggedIn) { showLoginPopup(); return; }
+  const cart = AdminDB.getCart();
   if(cart.length === 0){
     alert("Your cart is empty!");
     return;
@@ -993,17 +947,15 @@ function goToCart() {
   window.location.href = 'cart.html';
 }
 
-// Update count on page load
 updateCartCount();
 
-// Search Functionality
 document.getElementById('searchInput').addEventListener('input', function(e) {
   const searchTerm = e.target.value.toLowerCase();
   const productCards = document.querySelectorAll('.product-card');
   
   productCards.forEach(card => {
-    const productName = card.dataset.name.toLowerCase();
-    const productDesc = card.dataset.desc.toLowerCase();
+    const productName = (card.dataset.name || '').toLowerCase();
+    const productDesc = (card.dataset.desc || '').toLowerCase();
     
     if (productName.includes(searchTerm) || productDesc.includes(searchTerm)) {
       card.style.display = 'block';
@@ -1015,28 +967,18 @@ document.getElementById('searchInput').addEventListener('input', function(e) {
 
 document.addEventListener('click', function(e){
   const card = e.target.closest('.product-card');
-  if(!card) return; // Exit if not clicking a card button (e.g. inside modal)
+  if(!card) return; 
 
   if(e.target && e.target.classList.contains('add-cart-btn')){
     if (!isLoggedIn) { showLoginPopup(); return; }
-    cart.unshift({name: card.dataset.name, price: card.dataset.price, img: card.dataset.img});
-    saveCart();
+    AdminDB.addToCart({name: card.dataset.name, price: card.dataset.price, img: card.dataset.img});
+    updateCartCount();
     alert(card.dataset.name + ' added to cart!');
   }
 
   if(e.target && e.target.classList.contains('buy-btn')){
     if (!isLoggedIn) { showLoginPopup(); return; }
-    const item = [{name: card.dataset.name, price: card.dataset.price, img: card.dataset.img}];
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'auth.php';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'orderData';
-    input.value = JSON.stringify(item);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
+    window.location.href = `payment.html?amount=${card.dataset.price}&item=${encodeURIComponent(card.dataset.name)}`;
   }
 });
 </script>

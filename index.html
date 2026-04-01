@@ -355,19 +355,19 @@
     </div>
   </footer>
 
+  <script src="admin_db.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const authButtons = document.getElementById("authButtons");
-      const loggedInUser = localStorage.getItem("loggedInUser");
+      const user = AdminDB.getLoggedInUser();
       
-      if (loggedInUser) {
-        const user = JSON.parse(loggedInUser);
+      if (user) {
         authButtons.innerHTML = `
           <div class="user-info">
             <span class="user-greeting"><i class="fa-solid fa-circle-user"></i> Hi, ${user.name}!</span>
             <a href="pro.html" class="logout-btn" style="background: rgba(76,175,80,0.4);"><i class="fa-solid fa-truck"></i> My Orders</a>
             <a href="prof.html" class="logout-btn" style="background: rgba(255,255,255,0.3);"><i class="fa-solid fa-user"></i> Profile</a>
-            <button onclick="logout()" class="logout-btn" style="border: none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            <button onclick="handleLogout()" class="logout-btn" style="border: none; background: rgba(255,111,97,0.8);"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
           </div>
         `;
       } else {
@@ -378,8 +378,8 @@
       }
     });
 
-    function logout() {
-      localStorage.removeItem("loggedInUser");
+    function handleLogout() {
+      AdminDB.logout();
       window.location.reload();
     }
   </script>

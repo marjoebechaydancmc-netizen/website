@@ -1,37 +1,37 @@
 /**
  * admin_db.js
- * A client-side "database" using localStorage to handle Trendy Threads Admin data.
+ * A client-side "database" using localStorage to handle Trendy Threads data.
+ * Manages Admins, Users, Products, Cart, and Orders.
  */
 
 const DB_USERS_KEY = 'trendy_threads_users';
 const DB_PRODUCTS_KEY = 'trendy_threads_products';
-const DB_LOGGED_IN_USER_KEY = 'trendy_threads_admin_logged_in';
+const DB_LOGGED_IN_USER_KEY = 'trendy_threads_admin_logged_in'; // Also used for regular users
+const DB_CART_KEY = 'trendy_threads_cart';
 
 const INITIAL_USERS = [
     {
         "name": "Admin User",
         "email": "admin@example.com",
         "password": "password123",
-        "phone": "",
+        "phone": "09123456789",
         "role": "admin",
         "profile_pic": "",
-        "orders": [
-            {
-                "id": "ORD-12345",
-                "date": "2026-04-01 14:00:00",
-                "total": 59.98,
-                "payment_method": "GCash",
-                "status": "Completed",
-                "items": [
-                    { "name": "Product 1", "price": 19.99, "qty": 1 },
-                    { "name": "Product 5", "price": 39.99, "qty": 1 }
-                ]
-            }
-        ]
+        "region": "", "province": "", "city": "", "barangay": "", "street": "",
+        "orders": []
+    },
+    {
+        "name": "Test Sales",
+        "email": "sales@example.com",
+        "password": "password123",
+        "phone": "09987654321",
+        "role": "sales",
+        "profile_pic": "",
+        "region": "", "province": "", "city": "", "barangay": "", "street": "",
+        "orders": []
     }
 ];
 
-// Expanded initialization with all products from original products.json
 const INITIAL_PRODUCTS = [
     { "name": "Product 1", "price": 19.99, "img": "aaq.jpg", "desc": "High-quality and stylish product.", "stock": 100 },
     { "name": "Product 2", "price": 29.99, "img": "sss.jpg", "desc": "Durable and reliable item.", "stock": 100 },
@@ -78,7 +78,7 @@ const AdminDB = {
         return users.find(u => u.email === email);
     },
 
-    registerUser: (name, email, password, role = 'admin') => {
+    registerUser: (name, email, password, role = 'sales') => {
         const users = AdminDB.getUsers();
         if (users.find(u => u.email === email)) return { success: false, message: 'Email already registered.' };
 
@@ -118,8 +118,66 @@ const AdminDB = {
         AdminDB.saveProducts(products);
     },
 
+    updateProductStock: (name, qty) => {
+        const products = AdminDB.getProducts();
+        const p = products.find(prod => prod.name === name);
+        if (p) {
+            p.stock = Math.max(0, p.stock - qty);
+            AdminDB.saveProducts(products);
+        }
+    },
+
+    // CART METHODS
+    getCart: () => JSON.parse(localStorage.getItem(DB_CART_KEY) || '[]'),
+    saveCart: (cart) => localStorage.setItem(DB_CART_KEY, JSON.stringify(cart)),
+    addToCart: (item) => {
+        const cart = AdminDB.getCart();
+        cart.push(item);
+        AdminDB.saveCart(cart);
+    },
+    removeFromCart: (index) => {
+        const cart = AdminDB.getCart();
+        cart.splice(index, 1);
+        AdminDB.saveCart(cart);
+    },
+    clearCart: () => localStorage.removeItem(DB_CART_KEY),
+
+    // ORDER METHODS
+    placeOrder: (items, total, paymentMethod = 'GCash') => {
+        const user = AdminDB.getLoggedInUser();
+        if (!user) return false;
+
+        const order = {
+            id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+            date: new Date().toLocaleString(),
+            total: total,
+            payment_method: paymentMethod,
+            status: 'Processing',
+            items: items
+        };
+
+        const users = AdminDB.getUsers();
+        const uIdx = users.findIndex(u => u.email === user.email);
+        if (uIdx !== -1) {
+            if (!users[uIdx].orders) users[uIdx].orders = [];
+            users[uIdx].orders.unshift(order);
+            AdminDB.saveUsers(users);
+            AdminDB.setLoggedInUser(users[uIdx]); // Refresh session
+
+            // Deduct stock
+            items.forEach(item => {
+                AdminDB.updateProductStock(item.name, item.qty || 1);
+            });
+            return true;
+        }
+        return false;
+    },
+
     // SESSION METHODS
     getLoggedInUser: () => JSON.parse(localStorage.getItem(DB_LOGGED_IN_USER_KEY) || 'null'),
     setLoggedInUser: (user) => localStorage.setItem(DB_LOGGED_IN_USER_KEY, JSON.stringify(user)),
-    logout: () => localStorage.removeItem(DB_LOGGED_IN_USER_KEY)
+    logout: () => {
+        localStorage.removeItem(DB_LOGGED_IN_USER_KEY);
+        localStorage.removeItem(DB_CART_KEY);
+    }
 };

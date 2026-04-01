@@ -250,35 +250,30 @@ footer {
 <body>
 
 <header>
-  <a class="back-btn" href="sales.php"><i class="fa-solid fa-arrow-left"></i> Back to Shop</a>
+  <a class="back-btn" href="sales.html"><i class="fa-solid fa-arrow-left"></i> Back to Shop</a>
   <h1><i class="fa-solid fa-cart-shopping"></i> Your Cart</h1>
 </header>
 
 <main id="cart-main">
-  <!-- Cart content will be rendered by JavaScript from localStorage -->
+  <!-- Cart content will be rendered by JavaScript from AdminDB -->
 </main>
 
 <footer>
-&copy; 2026 My Online Store
+&copy; 2026 Trendy Threads
 </footer>
 
+<script src="admin_db.js"></script>
 <script>
-// Load cart from localStorage
-let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-function saveCart() {
-  localStorage.setItem('cart', JSON.stringify(cart));
-}
-
 function renderCart() {
   const main = document.getElementById('cart-main');
+  const cart = AdminDB.getCart();
 
   if (cart.length === 0) {
     main.innerHTML = `
       <div class="cart-empty">
         <i class="fa-solid fa-cart-shopping"></i>
         <p>Your cart is empty!</p>
-        <a href="sales.php">Continue Shopping</a>
+        <a href="sales.html">Continue Shopping</a>
       </div>
     `;
     return;
@@ -297,7 +292,7 @@ function renderCart() {
           <h3>${item.name}</h3>
           <div class="price">$${price.toFixed(2)}</div>
         </div>
-        <button class="checkout-item-btn" onclick="checkoutItem(${index})"><i class="fa-solid fa-credit-card"></i> Checkout</button>
+        <button class="checkout-item-btn" onclick="checkoutOne(${index})"><i class="fa-solid fa-credit-card"></i> Checkout</button>
         <button class="remove-btn" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i> Remove</button>
       </div>
     `;
@@ -308,7 +303,7 @@ function renderCart() {
   itemsHtml += `
     <div class="cart-summary">
       <div class="total">Total: <span>$${total.toFixed(2)}</span> (${cart.length} item${cart.length > 1 ? 's' : ''})</div>
-      <button class="checkout-btn" onclick="goToCheckout()"><i class="fa-solid fa-credit-card"></i> Checkout</button>
+      <button class="checkout-btn" onclick="checkoutAll()"><i class="fa-solid fa-credit-card"></i> Checkout All</button>
     </div>
   `;
 
@@ -323,64 +318,31 @@ function removeItem(index) {
     itemEl.style.transform = 'translateX(50px)';
   }
   setTimeout(function() {
-    cart.splice(index, 1);
-    saveCart();
+    AdminDB.removeFromCart(index);
     renderCart();
   }, 300);
 }
 
-function goToCheckout() {
+function checkoutAll() {
+  const cart = AdminDB.getCart();
   if (cart.length === 0) {
     alert('Your cart is empty!');
     return;
   }
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = 'auth.php';
-  
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'orderData';
-  input.value = JSON.stringify(cart);
-  form.appendChild(input);
-  
-  const actionInput = document.createElement('input');
-  actionInput.type = 'hidden';
-  actionInput.name = 'cartAction';
-  actionInput.value = 'all';
-  form.appendChild(actionInput);
-
-  document.body.appendChild(form);
-  form.submit();
+  const total = cart.reduce((acc, item) => acc + parseFloat(item.price), 0);
+  window.location.href = `payment.html?amount=${total.toFixed(2)}&type=cart`;
 }
 
-function checkoutItem(index) {
+function checkoutOne(index) {
+  const cart = AdminDB.getCart();
   const item = cart[index];
   if (!item) return;
   
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = 'auth.php';
-  
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'orderData';
-  input.value = JSON.stringify([item]);
-  form.appendChild(input);
-
-  const actionInput = document.createElement('input');
-  actionInput.type = 'hidden';
-  actionInput.name = 'cartAction';
-  actionInput.value = index.toString();
-  form.appendChild(actionInput);
-
-  document.body.appendChild(form);
-  form.submit();
+  window.location.href = `payment.html?amount=${parseFloat(item.price).toFixed(2)}&item=${encodeURIComponent(item.name)}&idx=${index}`;
 }
 
 // Initial render
-renderCart();
+window.onload = renderCart;
 </script>
-
 </body>
 </html>

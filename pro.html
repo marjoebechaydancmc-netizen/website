@@ -1,37 +1,3 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-    header('Location: login.php?redirect=pro.php');
-    exit;
-}
-
-$usersFile = __DIR__ . '/users.json';
-$orders = [];
-
-if (file_exists($usersFile)) {
-    $users = json_decode(file_get_contents($usersFile), true);
-    foreach ($users as $u) {
-        if ($u['email'] === $_SESSION['user_email']) {
-            $orders = $u['orders'] ?? [];
-            break;
-        }
-    }
-}
-
-// Simulate shipping progress based on time
-function getShippingStatus($orderDate) {
-    $placed = strtotime($orderDate);
-    $now = time();
-    $hoursElapsed = ($now - $placed) / 3600;
-
-    if ($hoursElapsed < 0.5) return ['status' => 'Processing', 'icon' => 'fa-box', 'color' => '#ff9800', 'progress' => 15];
-    if ($hoursElapsed < 2) return ['status' => 'Packed', 'icon' => 'fa-box-open', 'color' => '#2196F3', 'progress' => 35];
-    if ($hoursElapsed < 6) return ['status' => 'Shipped', 'icon' => 'fa-truck', 'color' => '#9c27b0', 'progress' => 55];
-    if ($hoursElapsed < 24) return ['status' => 'Out for Delivery', 'icon' => 'fa-truck-fast', 'color' => '#ff5722', 'progress' => 80];
-    return ['status' => 'Delivered', 'icon' => 'fa-circle-check', 'color' => '#4CAF50', 'progress' => 100];
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,6 +5,7 @@ function getShippingStatus($orderDate) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Orders - Trendy Threads</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="admin_db.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -99,6 +66,7 @@ body {
     font-size: 60px;
     color: #ddd;
     margin-bottom: 15px;
+    display: block;
 }
 
 .empty-state p {
@@ -128,6 +96,12 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     overflow: hidden;
     transition: 0.3s;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .order-card:hover {
@@ -154,6 +128,7 @@ body {
 .order-date {
     color: #999;
     font-size: 13px;
+    margin-top: 3px;
 }
 
 .order-status {
@@ -219,6 +194,7 @@ body {
     height: 55px;
     border-radius: 8px;
     object-fit: cover;
+    background: #eee;
 }
 
 .order-item-name {
@@ -324,78 +300,107 @@ footer {
 <body>
 
 <div class="header">
-    <a href="sales.php" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Shop</a>
+    <a href="sales.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Shop</a>
     <h1><i class="fa-solid fa-truck"></i> My Orders</h1>
 </div>
 
-<div class="container">
-
-<?php if (empty($orders)): ?>
-    <div class="empty-state">
-        <i class="fa-solid fa-receipt"></i>
-        <p>You haven't placed any orders yet.</p>
-        <a href="sales.php"><i class="fa-solid fa-bag-shopping"></i> Start Shopping</a>
-    </div>
-<?php else: ?>
-    <?php foreach ($orders as $order):
-        $status = getShippingStatus($order['date']);
-        $progress = $status['progress'];
-    ?>
-    <div class="order-card">
-        <!-- Order Header -->
-        <div class="order-header">
-            <div>
-                <div class="order-id"><i class="fa-solid fa-receipt"></i> <?= htmlspecialchars($order['id']) ?></div>
-                <div class="order-date"><i class="fa-regular fa-calendar"></i> <?= date('M d, Y - h:i A', strtotime($order['date'])) ?></div>
-            </div>
-            <div class="order-status" style="background: <?= $status['color'] ?>;">
-                <i class="fa-solid <?= $status['icon'] ?>"></i> <?= $status['status'] ?>
-            </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-bar-container">
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: <?= $progress ?>%; background: linear-gradient(90deg, <?= $status['color'] ?>, <?= $status['color'] ?>aa);"></div>
-            </div>
-            <div class="progress-steps">
-                <span class="<?= $progress >= 15 ? 'active' : '' ?>">Processing</span>
-                <span class="<?= $progress >= 35 ? 'active' : '' ?>">Packed</span>
-                <span class="<?= $progress >= 55 ? 'active' : '' ?>">Shipped</span>
-                <span class="<?= $progress >= 80 ? 'active' : '' ?>">Out for Delivery</span>
-                <span class="<?= $progress >= 100 ? 'active' : '' ?>">Delivered</span>
-            </div>
-        </div>
-
-        <!-- Order Items -->
-        <div class="order-items">
-            <?php foreach ($order['items'] as $item): ?>
-            <div class="order-item">
-                <img src="<?= htmlspecialchars($item['img'] ?? 'placeholder.jpg') ?>" alt="<?= htmlspecialchars($item['name']) ?>">
-                <div class="order-item-name"><?= htmlspecialchars($item['name']) ?></div>
-                <div class="order-item-price">$<?= number_format(floatval($item['price']), 2) ?></div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-
-        <!-- Order Footer -->
-        <div class="order-footer">
-            <div class="order-payment">
-                <i class="fa-solid fa-credit-card"></i> <?= htmlspecialchars($order['payment_method'] ?? 'Cash on Delivery') ?>
-                &nbsp;|&nbsp;
-                <i class="fa-solid fa-truck"></i> Shipping: $<?= number_format(floatval($order['shipping_fee'] ?? 50), 2) ?>
-            </div>
-            <div class="order-total">Total: <span>$<?= number_format(floatval($order['total'] ?? 0), 2) ?></span></div>
-        </div>
-    </div>
-    <?php endforeach; ?>
-<?php endif; ?>
-
+<div class="container" id="ordersContainer">
+    <!-- Injected by JS -->
 </div>
 
 <footer>
     &copy; 2026 Trendy Threads. All rights reserved.
 </footer>
+
+<script>
+function getShippingStatus(orderDate) {
+    const placed = new Date(orderDate).getTime();
+    const now = Date.now();
+    const hoursElapsed = (now - placed) / 3600000;
+
+    if (hoursElapsed < 0.5) return { status: 'Processing',        icon: 'fa-box',        color: '#ff9800', progress: 15  };
+    if (hoursElapsed < 2)   return { status: 'Packed',            icon: 'fa-box-open',   color: '#2196F3', progress: 35  };
+    if (hoursElapsed < 6)   return { status: 'Shipped',           icon: 'fa-truck',      color: '#9c27b0', progress: 55  };
+    if (hoursElapsed < 24)  return { status: 'Out for Delivery',  icon: 'fa-truck-fast', color: '#ff5722', progress: 80  };
+    return                         { status: 'Delivered',          icon: 'fa-circle-check',color: '#4CAF50', progress: 100 };
+}
+
+function renderOrders() {
+    const user = AdminDB.getLoggedInUser();
+    if (!user) {
+        window.location.href = 'login.html?redirect=pro.html';
+        return;
+    }
+
+    const container = document.getElementById('ordersContainer');
+    const orders = user.orders || [];
+
+    if (orders.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-receipt"></i>
+                <p>You haven't placed any orders yet.</p>
+                <a href="sales.html"><i class="fa-solid fa-bag-shopping"></i> Start Shopping</a>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    orders.forEach(order => {
+        const s = getShippingStatus(order.date);
+        const itemsHtml = (order.items || []).map(item => `
+            <div class="order-item">
+                <img src="${item.img || 'placeholder.jpg'}" alt="${item.name}" onerror="this.src='placeholder.jpg'">
+                <div class="order-item-name">${item.name}</div>
+                <div class="order-item-price">$${parseFloat(item.price || 0).toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        html += `
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id"><i class="fa-solid fa-receipt"></i> ${order.id}</div>
+                        <div class="order-date"><i class="fa-regular fa-calendar"></i> ${order.date}</div>
+                    </div>
+                    <div class="order-status" style="background: ${s.color};">
+                        <i class="fa-solid ${s.icon}"></i> ${s.status}
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${s.progress}%; background: linear-gradient(90deg, ${s.color}, ${s.color}aa);"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <span class="${s.progress >= 15  ? 'active' : ''}">Processing</span>
+                        <span class="${s.progress >= 35  ? 'active' : ''}">Packed</span>
+                        <span class="${s.progress >= 55  ? 'active' : ''}">Shipped</span>
+                        <span class="${s.progress >= 80  ? 'active' : ''}">Out for Delivery</span>
+                        <span class="${s.progress >= 100 ? 'active' : ''}">Delivered</span>
+                    </div>
+                </div>
+
+                <div class="order-items">${itemsHtml}</div>
+
+                <div class="order-footer">
+                    <div class="order-payment">
+                        <i class="fa-solid fa-credit-card"></i> ${order.payment_method || 'GCash'}
+                        &nbsp;|&nbsp;
+                        <i class="fa-solid fa-truck"></i> Shipping: $5.00
+                    </div>
+                    <div class="order-total">Total: <span>$${parseFloat(order.total || 0).toFixed(2)}</span></div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+window.onload = renderOrders;
+</script>
 
 </body>
 </html>
