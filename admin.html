@@ -1,97 +1,3 @@
-<?php
-session_start();
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['user_role'] ?? '') !== 'admin') {
-    header('Location: admin_login.php');
-    exit;
-}
-
-$usersFile = __DIR__ . '/users.json';
-$users = file_exists($usersFile) ? json_decode(file_get_contents($usersFile), true) : [];
-
-$income = 0;
-$salesCount = 0;
-$salesHistory = []; 
-$currentAdminData = [];
-
-if (is_array($users)) {
-    foreach ($users as $u) {
-        if (($u['email'] ?? '') === ($_SESSION['user_email'] ?? '')) {
-            $currentAdminData = $u;
-        }
-        if (isset($u['orders']) && is_array($u['orders'])) {
-            foreach ($u['orders'] as $order) {
-                $income += (float)($order['total'] ?? 0);
-                if (isset($order['items']) && is_array($order['items'])) {
-                    $salesCount += count($order['items']);
-                }
-                
-                $salesHistory[] = [
-                    'id' => $order['id'] ?? 'N/A',
-                    'date' => $order['date'] ?? 'Unknown Date',
-                    'buyer' => htmlspecialchars($u['name'] ?? 'Unknown'),
-                    'items' => isset($order['items']) ? count($order['items']) : 0,
-                    'total' => number_format((float)($order['total'] ?? 0), 2),
-                    'method' => $order['payment_method'] ?? 'N/A',
-                    'status' => $order['status'] ?? 'Completed'
-                ];
-            }
-        }
-    }
-}
-
-// Sort sales history by date descending (newest first)
-usort($salesHistory, function($a, $b) {
-    return strtotime($b['date']) - strtotime($a['date']);
-});
-
-$productsFile = __DIR__ . '/products.json';
-$productsData = file_exists($productsFile) ? file_get_contents($productsFile) : '[]';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
-    $newName = $_POST['name'] ?? '';
-    $newPass = $_POST['password'] ?? '';
-    $newPic  = $_POST['profile_pic'] ?? '';
-    
-    if ($newName && $newPass) {
-        if (is_array($users)) {
-            foreach ($users as &$u) {
-                if (($u['email'] ?? '') === ($_SESSION['user_email'] ?? '')) {
-                    $u['name'] = $newName;
-                    $u['password'] = $newPass;
-                    $u['profile_pic'] = $newPic;
-                    $_SESSION['user_name'] = $newName; 
-                    break;
-                }
-            }
-            unset($u);
-            file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
-        }
-        header("Location: admin.php?tab=profile&updated=1"); 
-        exit;
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_product') {
-    $pname = $_POST['name'] ?? '';
-    $pprice = floatval($_POST['price'] ?? 0);
-    $pstock = intval($_POST['stock'] ?? 0);
-    
-    if ($pname && $pprice > 0 && $pstock > 0) {
-        $prods = json_decode($productsData, true);
-        if (!is_array($prods)) $prods = [];
-        $prods[] = [
-            'name' => $pname,
-            'price' => $pprice,
-            'stock' => $pstock,
-            'img' => 'placeholder.jpg',
-            'desc' => 'Newly added product.'
-        ];
-        file_put_contents($productsFile, json_encode($prods, JSON_PRETTY_PRINT));
-        header("Location: admin.php?tab=stocks"); 
-        exit;
-    }
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -100,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <title>Admin Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="admin_db.js"></script>
 
 <style>
 body {
@@ -147,7 +54,7 @@ body {
     display: none;
 }
 
-.active {
+.page.active {
     display: block;
 }
 
@@ -203,9 +110,9 @@ button {
 <!-- SIDEBAR -->
 <div class="sidebar">
     <div class="profile-widget" onclick="showPage('profile')" style="text-align: center; cursor: pointer; margin-bottom: 20px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" title="Edit Profile">
-        <img src="<?= htmlspecialchars(!empty($currentAdminData['profile_pic']) ? $currentAdminData['profile_pic'] : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png') ?>" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #2563eb; background: white;">
-        <h3 style="margin: 0; color: white; font-size: 16px;"><?= htmlspecialchars($currentAdminData['name'] ?? 'Administrator') ?></h3>
-        <p style="margin: 5px 0 0 0; color: #cbd5e1; font-size: 12px;"><?= htmlspecialchars($currentAdminData['email'] ?? '') ?></p>
+        <img id="sidebarPic" src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #2563eb; background: white;">
+        <h3 id="sidebarName" style="margin: 0; color: white; font-size: 16px;">Administrator</h3>
+        <p id="sidebarEmail" style="margin: 5px 0 0 0; color: #cbd5e1; font-size: 12px;"></p>
     </div>
     <hr style="border: 0; border-top: 1px solid #374151; margin-bottom: 20px;">
     
@@ -213,7 +120,7 @@ button {
     <a onclick="showPage('sales')">💰 Sales</a>
     <a onclick="showPage('stocks')">📦 Stocks</a>
     <a onclick="showPage('profile')">⚙️ Account Settings</a>
-    <a href="login.php?action=logout" style="color: #ef4444; margin-top: 30px;">🚪 Logout</a>
+    <a onclick="handleLogout()" style="color: #ef4444; margin-top: 30px;">🚪 Logout</a>
 </div>
 
 <!-- MAIN -->
@@ -224,11 +131,11 @@ button {
         <div class="cards">
             <div class="card">
                 <h3>Total Income</h3>
-                <p id="income">$0</p>
+                <p id="income">$0.00</p>
             </div>
             <div class="card">
                 <h3>Total Items Sold</h3>
-                <p id="salesCount">0</p>
+                <p id="salesCountDisplay">0</p>
             </div>
             <div class="card">
                 <h3>Products</h3>
@@ -265,11 +172,10 @@ button {
     <div id="stocks" class="page">
         <h2>Product Stocks</h2>
 
-        <form method="POST" action="admin.php" style="margin-bottom: 20px;">
-            <input type="hidden" name="action" value="add_product">
-            <input name="name" id="name" placeholder="Product name" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            <input name="price" id="price" type="number" step="0.01" placeholder="Price" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            <input name="stock" id="stock" type="number" placeholder="Stock" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
+        <form onsubmit="handleAddProduct(event)" style="margin-bottom: 20px;">
+            <input id="p-name" placeholder="Product name" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            <input id="p-price" type="number" step="0.01" placeholder="Price" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            <input id="p-stock" type="number" placeholder="Stock" required style="padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
             <button type="submit" style="padding: 8px 15px;">Add Product</button>
         </form>
 
@@ -282,31 +188,28 @@ button {
                     <th>Sales Source</th>
                 </tr>
             </thead>
-            <tbody id="list"></tbody>
+            <tbody id="stockList"></tbody>
         </table>
     </div>
 
     <!-- PROFILE PAGE -->
     <div id="profile" class="page">
         <h2>Admin Profile</h2>
-        <?php if (isset($_GET['updated'])): ?>
-            <p style="color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; border: 1px solid #c3e6cb; margin-bottom: 20px;">Profile updated successfully!</p>
-        <?php endif; ?>
+        <div id="profile-success" style="display:none; color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; border: 1px solid #c3e6cb; margin-bottom: 20px;">Profile updated successfully!</div>
+        
         <div class="card" style="max-width: 500px;">
-            <form method="POST" action="admin.php">
-                <input type="hidden" name="action" value="update_profile">
-                
+            <form onsubmit="handleUpdateProfile(event)">
                 <label style="display:block; margin-bottom: 5px; font-weight: bold; color: #333;">Email Address <span style="font-weight:normal; color:#888;">(Read-only)</span></label>
-                <input type="email" value="<?= htmlspecialchars($currentAdminData['email'] ?? '') ?>" readonly style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; background: #e9ecef; box-sizing: border-box; color: #555; outline: none;">
+                <input type="email" id="profile-email" readonly style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; background: #e9ecef; box-sizing: border-box; color: #555; outline: none;">
                 
                 <label style="display:block; margin-bottom: 5px; font-weight: bold; color: #333;">Full Name</label>
-                <input type="text" name="name" value="<?= htmlspecialchars($currentAdminData['name'] ?? '') ?>" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+                <input type="text" id="profile-name" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
                 
                 <label style="display:block; margin-bottom: 5px; font-weight: bold; color: #333;">Password</label>
-                <input type="text" name="password" value="<?= htmlspecialchars($currentAdminData['password'] ?? '') ?>" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+                <input type="text" id="profile-password" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
                 
                 <label style="display:block; margin-bottom: 5px; font-weight: bold; color: #333;">Profile Picture URL</label>
-                <input type="text" name="profile_pic" value="<?= htmlspecialchars($currentAdminData['profile_pic'] ?? '') ?>" placeholder="http://example.com/image.jpg" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+                <input type="text" id="profile-pic" placeholder="http://example.com/image.jpg" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
                 
                 <button type="submit" style="padding: 12px 20px; font-size: 16px; width: 100%; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Changes</button>
             </form>
@@ -316,48 +219,88 @@ button {
 </div>
 
 <script>
-let products = <?= $productsData ?>;
-let income = <?= $income ?>;
-let sales = <?= json_encode($salesHistory) ?>;
 let chart;
 
-// NAVIGATION
+// Check Login
+const loggedInUser = AdminDB.getLoggedInUser();
+if (!loggedInUser || loggedInUser.role !== 'admin') {
+    location.href = 'admin_login.html';
+}
+
+// Global data derived from DB
+let products = [];
+let sales = [];
+let totalIncome = 0;
+
 function showPage(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(page).classList.add('active');
 }
 
-// UPDATE UI
 function update() {
-    document.getElementById("income").innerText = "$" + income.toFixed(2);
-    document.getElementById("salesCount").innerText = sales.length; // Items sold
+    products = AdminDB.getProducts();
+    const users = AdminDB.getUsers();
+    
+    // Process Sales from all users
+    sales = [];
+    totalIncome = 0;
+    let itemsSold = 0;
+    
+    users.forEach(u => {
+        if (u.orders && u.orders.length > 0) {
+            u.orders.forEach(o => {
+                totalIncome += parseFloat(o.total);
+                itemsSold += (o.items ? o.items.length : 0);
+                sales.push({
+                    id: o.id,
+                    date: o.date,
+                    buyer: u.name,
+                    items: (o.items ? o.items.length : 0),
+                    method: o.payment_method,
+                    total: parseFloat(o.total).toFixed(2),
+                    status: o.status || 'Completed'
+                });
+            });
+        }
+    });
+
+    // Sort sales newest first
+    sales.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Dashboard stats
+    document.getElementById("income").innerText = "$" + totalIncome.toFixed(2);
+    document.getElementById("salesCountDisplay").innerText = itemsSold;
     document.getElementById("productCount").innerText = products.length;
 
-    // PRODUCTS
-    let list = document.getElementById("list");
-    list.innerHTML = "";
-    products.forEach((p, i) => {
-        let stock = p.stock !== undefined ? p.stock : 0;
-        let pName = p.name ? p.name : 'Unknown Product';
-        let pPrice = p.price !== undefined ? parseFloat(p.price).toFixed(2) : '0.00';
-        list.innerHTML += `
+    // Sidebar
+    document.getElementById('sidebarName').innerText = loggedInUser.name;
+    document.getElementById('sidebarEmail').innerText = loggedInUser.email;
+    if (loggedInUser.profile_pic) {
+        document.getElementById('sidebarPic').src = loggedInUser.profile_pic;
+    }
+
+    // Stock List
+    const stockList = document.getElementById("stockList");
+    stockList.innerHTML = "";
+    products.forEach(p => {
+        stockList.innerHTML += `
         <tr>
-            <td>${pName}</td>
-            <td>$${pPrice}</td>
-            <td><strong>${stock}</strong></td>
+            <td>${p.name}</td>
+            <td>$${parseFloat(p.price).toFixed(2)}</td>
+            <td><strong>${p.stock || 0}</strong></td>
             <td><span style="color:#666; font-size:12px;">Purchases via Website</span></td>
         </tr>`;
     });
 
-    // SALES LIST
-    let salesList = document.getElementById("salesList");
-    salesList.innerHTML = "";
-    if(sales.length === 0) {
-        salesList.innerHTML = "<tr><td colspan='7' style='text-align:center; padding: 20px;'>No sales recorded yet.</td></tr>";
+    // Sales List
+    const salesListEl = document.getElementById("salesList");
+    salesListEl.innerHTML = "";
+    if (sales.length === 0) {
+        salesListEl.innerHTML = "<tr><td colspan='7' style='text-align:center; padding: 20px;'>No sales recorded yet.</td></tr>";
     } else {
         sales.forEach(s => {
             let statusColor = s.status === 'Processing' ? 'color: #d97706; background: #fef3c7;' : 'color: #059669; background: #d1fae5;';
-            salesList.innerHTML += `
+            salesListEl.innerHTML += `
             <tr style="border-bottom: 1px solid #f1f5f9;">
                 <td style="font-family: monospace; font-weight: bold; color: #2563eb;">${s.id}</td>
                 <td><i class="fa-regular fa-clock" style="color: #64748b; margin-right:4px;"></i> ${s.date}</td>
@@ -370,27 +313,31 @@ function update() {
         });
     }
 
+    // Profile inputs
+    document.getElementById('profile-email').value = loggedInUser.email;
+    document.getElementById('profile-name').value = loggedInUser.name;
+    document.getElementById('profile-password').value = loggedInUser.password;
+    document.getElementById('profile-pic').value = loggedInUser.profile_pic || '';
+
     drawChart();
 }
 
-// CHART
 function drawChart() {
     let ctx = document.getElementById("chart");
-
     if (chart) chart.destroy();
 
     let cumulative = 0;
     // Map chronological order
-    let reversedSales = [...sales].reverse(); 
-    let growthData = reversedSales.map(s => {
-        cumulative += parseFloat(s.total.replace(/,/g, ''));
+    let chronologicalSales = [...sales].reverse(); 
+    let growthData = chronologicalSales.map(s => {
+        cumulative += parseFloat(s.total);
         return cumulative;
     });
 
     chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: reversedSales.map(s => s.id),
+            labels: chronologicalSales.map(s => s.id),
             datasets: [{
                 label: 'Cumulative Income ($)',
                 data: growthData,
@@ -404,15 +351,58 @@ function drawChart() {
     });
 }
 
-// Initialize UI
+function handleUpdateProfile(e) {
+    e.preventDefault();
+    const name = document.getElementById('profile-name').value;
+    const pass = document.getElementById('profile-password').value;
+    const pic = document.getElementById('profile-pic').value;
+    
+    AdminDB.updateUser(loggedInUser.email, { name, password: pass, profile_pic: pic });
+    
+    // Update local variable
+    loggedInUser.name = name;
+    loggedInUser.password = pass;
+    loggedInUser.profile_pic = pic;
+    
+    document.getElementById('profile-success').style.display = 'block';
+    setTimeout(() => {
+        document.getElementById('profile-success').style.display = 'none';
+    }, 3000);
+    
+    update();
+}
+
+function handleAddProduct(e) {
+    e.preventDefault();
+    const name = document.getElementById('p-name').value;
+    const price = parseFloat(document.getElementById('p-price').value);
+    const stock = parseInt(document.getElementById('p-stock').value);
+    
+    AdminDB.addProduct({ name, price, stock, img: 'placeholder.jpg', desc: 'Newly added product.' });
+    
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-stock').value = '';
+    
+    update();
+}
+
+function handleLogout() {
+    AdminDB.logout();
+    location.href = 'admin_login.html';
+}
+
 window.onload = function() {
     update();
-    let urlParams = new URLSearchParams(window.location.search);
-    let tabParam = urlParams.get('tab');
-    if (tabParam && document.getElementById(tabParam)) {
-        showPage(tabParam);
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && document.getElementById(tab)) {
+        showPage(tab);
     }
 };
+
+
+
 </script>
 
 </body>
